@@ -4,12 +4,14 @@
 
 name: release-windows
 
-on:
-  push:
-    tags:
-    - '2.*'
-  schedule:
-    - cron:  '0 0 * * *'
+on: [push,pull_request]
+
+#on:
+#  push:
+#    tags:
+#    - '2.*'
+#  schedule:
+#    - cron:  '0 0 * * *'
 
 defaults:
   run:
@@ -58,9 +60,16 @@ jobs:
           lupdate gui.pro
           lrelease gui.pro -removeidentical
 
+      - name: Matchcompiler
+        run: |
+          dir lib
+          python tools\matchcompiler.py --write-dir lib
+          dir lib
+
       - name: Build x64 release GUI
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          dir lib
           cd gui
           qmake HAVE_QCHART=yes
           nmake release
@@ -74,7 +83,9 @@ jobs:
           del Build\gui\cppcheck-gui.pdb
 
       - name: Build CLI x64 release configuration using MSBuild
-        run: msbuild -m cppcheck.sln /p:Configuration=Release-PCRE /p:Platform=x64
+        run: |
+          dir lib
+          msbuild -m cppcheck.sln /p:Configuration=Release-PCRE /p:Platform=x64
 
       - name: Build Installer
         run: |
@@ -88,3 +99,8 @@ jobs:
         with:
           name: Build
           path: win_installer/Build/
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: lib
+          path: lib/
